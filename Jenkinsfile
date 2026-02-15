@@ -3,7 +3,7 @@
 
     environment {
         DOCKERHUB_USERNAME = "yogismash"
-        DOCKER_IMAGE = "${DOCKERHUB_USERNAME}/django-"app
+        DOCKER_IMAGE = "${DOCKERHUB_USERNAME}/django-app"
         CONTAINER_NAME = "django_container"
 
         APP_PORT = "8000"
