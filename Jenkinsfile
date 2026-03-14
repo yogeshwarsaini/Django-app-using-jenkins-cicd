@@ -66,27 +66,52 @@ pipeline {
         // ─────────────────────────────
         // Stage 3: SCA - OWASP DC
         // ─────────────────────────────
-        stage('SCA - OWASP Dependency Check') {
-            steps {
-                sh """
-                    /opt/dependency-check/bin/dependency-check.sh \
-                      --project "MyApp" \
-                      --scan . \
-                      --format HTML \
-                      --format XML \
-                      --out ./reports/dependency-check \
-                      --failOnCVSS 7
-                """
-            }
-            post {
-                always {
-                    // Report publish karo
-                    dependencyCheckPublisher \
-                        pattern: 'reports/dependency-check/dependency-check-report.xml'
-                }
-            }
-        }
+        // stage('SCA - OWASP Dependency Check') {
+        //     steps {
+        //         sh """
+        //             /opt/dependency-check/bin/dependency-check.sh \
+        //               --project "MyApp" \
+        //               --scan . \
+        //               --format HTML \
+        //               --format XML \
+        //               --out ./reports/dependency-check \
+        //               --failOnCVSS 7
+        //         """
+        //     }
+        //     post {
+        //         always {
+        //             // Report publish karo
+        //             dependencyCheckPublisher \
+        //                 pattern: 'reports/dependency-check/dependency-check-report.xml'
+        //         }
+        //     }
+        // }
 
+
+        stage('SCA - OWASP Dependency Check') {
+    steps {
+        sh """
+            # Reports folder pehle banao!
+            mkdir -p ./reports/dependency-check
+
+            /opt/dependency-check/bin/dependency-check.sh \
+              --project "MyApp" \
+              --scan . \
+              --format HTML \
+              --format XML \
+              --out ./reports/dependency-check \
+              --failOnCVSS 7 \
+              --noupdate
+        """
+    }
+    post {
+        always {
+            dependencyCheckPublisher \
+                pattern: 'reports/dependency-check/dependency-check-report.xml'
+        }
+    }
+}
+        
         // ─────────────────────────────
         // Stage 4: Docker Build
         // ─────────────────────────────
