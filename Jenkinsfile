@@ -11,7 +11,7 @@ pipeline {
     stages {
 
         // ─────────────────────────────
-        // Stage 1: Code Checkout
+        // Stage 1: Code Checkout //
         // ─────────────────────────────
         stage('Checkout') {
             steps {
