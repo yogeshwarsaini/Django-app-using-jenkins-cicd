@@ -48,7 +48,7 @@ pipeline {
                   -Dsonar.projectName=${SONAR_PROJECT_KEY} \
                   -Dsonar.sources=. \
                   -Dsonar.host.url=http://localhost:9000 \
-                  -Dsonar.login=sqp_129dc4011621fe129ce5f055537473478f05d15f
+                  -Dsonar.login=sqa_1e4ba1e052d31272b39e04639eb84c051a450cc5
             """
         }
     }
