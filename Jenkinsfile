@@ -23,7 +23,7 @@ pipeline {
         }
 
         // ─────────────────────────────
-        // Stage 2: SAST - SonarQube
+        // Stage 2: SAST - SonarQube //
         // ─────────────────────────────
         stage('SAST - SonarQube Scan') {
             steps {
