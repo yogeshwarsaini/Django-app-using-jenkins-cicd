@@ -39,29 +39,29 @@ pipeline {
         //     }
         // }
 
-//         stage('SAST - SonarQube Scan') {
-//     steps {
-//         withSonarQubeEnv('SonarQube') {
-//             sh """
-//                 /opt/sonar-scanner/bin/sonar-scanner \
-//                   -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-//                   -Dsonar.projectName=${SONAR_PROJECT_KEY} \
-//                   -Dsonar.sources=. \
-//                   -Dsonar.host.url=http://localhost:9000 \
-//                   -Dsonar.login=sqp_129dc4011621fe129ce5f055537473478f05d15f
-//             """
-//         }
-//     }
-// }
+        stage('SAST - SonarQube Scan') {
+    steps {
+        withSonarQubeEnv('SonarQube') {
+            sh """
+                /opt/sonar-scanner/bin/sonar-scanner \
+                  -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                  -Dsonar.projectName=${SONAR_PROJECT_KEY} \
+                  -Dsonar.sources=. \
+                  -Dsonar.host.url=http://localhost:9000 \
+                  -Dsonar.login=sqp_129dc4011621fe129ce5f055537473478f05d15f
+            """
+        }
+    }
+}
 
         // Quality Gate check
-        // stage('Quality Gate') {
-        //     steps {
-        //         timeout(time: 5, unit: 'MINUTES') {
-        //             waitForQualityGate abortPipeline: true
-        //         }
-        //     }
-        // }
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
 
         // ─────────────────────────────
         // Stage 3: SCA - OWASP DC
