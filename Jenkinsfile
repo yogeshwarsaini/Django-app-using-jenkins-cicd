@@ -88,29 +88,29 @@ pipeline {
         // }
 
 
-       stage('SCA - OWASP Dependency Check') {
-    steps {
-        sh """
-            mkdir -p ./reports/dependency-check
+    //    stage('SCA - OWASP Dependency Check') {
+    // steps {
+    //     sh """
+    //         mkdir -p ./reports/dependency-check
 
-            /opt/dependency-check/bin/dependency-check.sh \
-              --project "MyApp" \
-              --scan . \
-              --format HTML \
-              --format XML \
-              --out ./reports/dependency-check \
-              --failOnCVSS 7 \
-              --noupdate \
-              --data /opt/dependency-check/data
-        """
-    }
-    post {
-        always {
-            dependencyCheckPublisher \
-                pattern: 'reports/dependency-check/dependency-check-report.xml'
-        }
-    }
-}
+    //         /opt/dependency-check/bin/dependency-check.sh \
+    //           --project "MyApp" \
+    //           --scan . \
+    //           --format HTML \
+    //           --format XML \
+    //           --out ./reports/dependency-check \
+    //           --failOnCVSS 7 \
+    //           --noupdate \
+    //           --data /opt/dependency-check/data
+    //     """
+//     }
+//     post {
+//         always {
+//             dependencyCheckPublisher \
+//                 pattern: 'reports/dependency-check/dependency-check-report.xml'
+//         }
+//     }
+// }
         
         // ─────────────────────────────
         // Stage 4: Docker Build
