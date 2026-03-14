@@ -25,19 +25,33 @@ pipeline {
         // ─────────────────────────────
         // Stage 2: SAST - SonarQube //
         // ─────────────────────────────
+        // stage('SAST - SonarQube Scan') {
+        //     steps {
+        //         withSonarQubeEnv('SonarQube') {
+        //             sh """
+        //                 sonar-scanner \
+        //                   -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+        //                   -Dsonar.projectName=${SONAR_PROJECT_KEY} \
+        //                   -Dsonar.sources=. \
+        //                   -Dsonar.host.url=http://localhost:9000
+        //             """
+        //         }
+        //     }
+        // }
+
         stage('SAST - SonarQube Scan') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh """
-                        sonar-scanner \
-                          -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                          -Dsonar.projectName=${SONAR_PROJECT_KEY} \
-                          -Dsonar.sources=. \
-                          -Dsonar.host.url=http://localhost:9000
-                    """
-                }
-            }
+    steps {
+        withSonarQubeEnv('SonarQube') {
+            sh """
+                /opt/sonar-scanner/bin/sonar-scanner \
+                  -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                  -Dsonar.projectName=${SONAR_PROJECT_KEY} \
+                  -Dsonar.sources=. \
+                  -Dsonar.host.url=http://localhost:9000
+            """
         }
+    }
+}
 
         // Quality Gate check
         stage('Quality Gate') {
