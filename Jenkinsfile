@@ -1,97 +1,179 @@
- pipeline {
+pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USERNAME = "yogismash"
-        DOCKER_IMAGE = "${DOCKERHUB_USERNAME}/django-app"
-        CONTAINER_NAME = "django_container"
-
-        APP_PORT = "8000"
-        HOST_PORT = "8002"
-
-        DOCKERFILE_PATH = "."
-        HEALTH_CHECK_PATH = "/health"
-        WAIT_TIME = "25"
-        IMAGE_TAG = "${GIT_COMMIT}"
+        // Apna Docker Hub username daalo
+        DOCKER_IMAGE = "yogismash/django-app"
+        DOCKER_TAG = "${latest}"
+        SONAR_PROJECT_KEY = "sonar-key"
     }
 
     stages {
 
-        stage('Cleanup') {
-            steps {
-                cleanWs()
-            }
-        }
-
+        // ─────────────────────────────
+        // Stage 1: Code Checkout
+        // ─────────────────────────────
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main',
+                    credentialsId: 'github-token',
+                    url: 'https://github.com/yogeshwarsaini/Django-app-using-jenkins-cicd.git'
+                echo "✅ Code checkout complete!"
             }
         }
 
-        stage('Build Docker Image') {
+        // ─────────────────────────────
+        // Stage 2: SAST - SonarQube
+        // ─────────────────────────────
+        stage('SAST - SonarQube Scan') {
             steps {
-                sh """
-                docker build \
-                -t ${DOCKER_IMAGE}:${IMAGE_TAG} \
-                -t ${DOCKER_IMAGE}:latest \
-                ${DOCKERFILE_PATH}
-                """
-            }
-        }
-
-        stage('DockerHub Login') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
-                )]) {
-                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                withSonarQubeEnv('SonarQube') {
+                    sh """
+                        sonar-scanner \
+                          -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                          -Dsonar.projectName=${SONAR_PROJECT_KEY} \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=http://localhost:9000
+                    """
                 }
             }
         }
 
-        stage('Push Image') {
+        // Quality Gate check
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        // ─────────────────────────────
+        // Stage 3: SCA - OWASP DC
+        // ─────────────────────────────
+        stage('SCA - OWASP Dependency Check') {
             steps {
                 sh """
-                docker push ${DOCKER_IMAGE}:${IMAGE_TAG}
-                docker push ${DOCKER_IMAGE}:latest
+                    /opt/dependency-check/bin/dependency-check.sh \
+                      --project "MyApp" \
+                      --scan . \
+                      --format HTML \
+                      --format XML \
+                      --out ./reports/dependency-check \
+                      --failOnCVSS 7
+                """
+            }
+            post {
+                always {
+                    // Report publish karo
+                    dependencyCheckPublisher \
+                        pattern: 'reports/dependency-check/dependency-check-report.xml'
+                }
+            }
+        }
+
+        // ─────────────────────────────
+        // Stage 4: Docker Build
+        // ─────────────────────────────
+        stage('Docker Build') {
+            steps {
+                sh """
+                    docker build \
+                      -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+                      -t ${DOCKER_IMAGE}:latest \
+                      .
+                """
+                echo "✅ Docker image built!"
+            }
+        }
+
+        // ─────────────────────────────
+        // Stage 5: Trivy Image Scan
+        // ─────────────────────────────
+        stage('Trivy Image Scan') {
+            steps {
+                sh """
+                    # Reports folder banao
+                    mkdir -p reports/trivy
+
+                    # Image scan karo
+                    trivy image \
+                      --format table \
+                      --output reports/trivy/trivy-report.txt \
+                      --severity HIGH,CRITICAL \
+                      ${DOCKER_IMAGE}:${DOCKER_TAG}
+
+                    # Report print karo
+                    cat reports/trivy/trivy-report.txt
                 """
             }
         }
 
-        stage('Stop Old Container') {
+        // ─────────────────────────────
+        // Stage 6: Docker Push
+        // ─────────────────────────────
+        stage('Docker Push') {
             steps {
-                sh '''
-                docker stop ${CONTAINER_NAME} || true
-                docker rm ${CONTAINER_NAME} || true
-                '''
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-token',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh """
+                        echo $DOCKER_PASS | \
+                        docker login -u $DOCKER_USER --password-stdin
+
+                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker push ${DOCKER_IMAGE}:latest
+
+                        echo "✅ Image pushed to Docker Hub!"
+                    """
+                }
             }
         }
 
+        // ─────────────────────────────
+        // Stage 7: Deploy
+        // ─────────────────────────────
         stage('Deploy') {
             steps {
                 sh """
-                docker run -d \
-                --name ${CONTAINER_NAME} \
-                -p ${HOST_PORT}:${APP_PORT} \
-                ${DOCKER_IMAGE}:latest
+                    # Purana container stop karo
+                    docker stop myapp || true
+                    docker rm myapp || true
+
+                    # Naya container run karo
+                    docker run -d \
+                      --name myapp \
+                      --restart always \
+                      -p 8090:80 \
+                      ${DOCKER_IMAGE}:${DOCKER_TAG}
+
+                    echo "✅ App deployed on port 8090!"
                 """
             }
         }
-
-        stage('Verify') {
-            steps {
-                sh "sleep ${WAIT_TIME}"
-                sh "curl -f http://localhost:${HOST_PORT}${HEALTH_CHECK_PATH}"
-            }
-        }
     }
 
+    // Pipeline complete hone ke baad
     post {
+        success {
+            echo '✅ Pipeline Successful!'
+        }
+        failure {
+            echo '❌ Pipeline Failed!'
+        }
         always {
-            sh 'docker image prune -f || true'
+            // Reports archive karo
+            archiveArtifacts \
+                artifacts: 'reports/**/*',
+                allowEmptyArchive: true
+
+            // Workspace clean karo
+            cleanWs()
         }
     }
 }
+
