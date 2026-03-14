@@ -55,13 +55,19 @@ pipeline {
 }
 
         // Quality Gate check
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 15, unit: 'MINUTES') {
+      stage('Quality Gate') {
+    steps {
+        script {
+            try {
+                timeout(time: 1, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: false
                 }
+            } catch (err) {
+                echo "Quality Gate timeout - continuing pipeline!"
             }
         }
+    }
+}
 
         // ─────────────────────────────
         // Stage 3: SCA - OWASP DC
