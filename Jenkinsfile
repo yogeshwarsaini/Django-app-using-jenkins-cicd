@@ -88,10 +88,9 @@ pipeline {
         // }
 
 
-        stage('SCA - OWASP Dependency Check') {
+       stage('SCA - OWASP Dependency Check') {
     steps {
         sh """
-            # Reports folder pehle banao!
             mkdir -p ./reports/dependency-check
 
             /opt/dependency-check/bin/dependency-check.sh \
@@ -101,7 +100,8 @@ pipeline {
               --format XML \
               --out ./reports/dependency-check \
               --failOnCVSS 7 \
-              --noupdate
+              --noupdate \
+              --data /opt/dependency-check/data
         """
     }
     post {
